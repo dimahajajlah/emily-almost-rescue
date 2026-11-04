@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#201a3b">
+  <title>Emily and the Almost-Rescue</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f8f3ff;
+      --muted: #c4badb;
+      --panel: rgba(40, 32, 68, .92);
+      --panel-soft: rgba(55, 44, 89, .78);
+      --line: rgba(255,255,255,.12);
+      --lilac: #c8a8ff;
+      --pink: #ff9cc7;
+      --gold: #ffd782;
+      --mint: #9bf0cb;
+      font-family: ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 16% 8%, rgba(130, 96, 191, .24), transparent 34rem),
+        radial-gradient(ellipse at 90% 70%, rgba(233, 119, 173, .13), transparent 30rem),
+        #171329;
+    }
+    button { font: inherit; color: inherit; }
+    .shell { width: min(1360px, 100%); margin: auto; padding: 22px clamp(12px, 3vw, 34px) 30px; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 18px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark {
+      width: 46px; height: 46px; flex: 0 0 46px; display: grid; place-items: center;
+      border-radius: 16px; background: linear-gradient(145deg, #f7a7cb, #ad8bff);
+      box-shadow: 0 8px 26px #bd8fff40; color: #322247; font-size: 25px;
+    }
+    h1 { margin: 0; font-size: clamp(20px, 3vw, 29px); letter-spacing: -.04em; line-height: 1.1; }
+    .subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .small-button, .primary-button, .secondary-button, .role-button, .dialog-next {
+      border: 1px solid var(--line); border-radius: 12px; background: var(--panel-soft);
+      cursor: pointer; transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+    .small-button { padding: 9px 12px; color: #eee7fb; font-size: 12px; }
+    .small-button:hover, .secondary-button:hover, .role-button:hover { border-color: #d3b7ff88; transform: translateY(-1px); }
+    .game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 292px; gap: 16px; align-items: start; }
+    .play-column { min-width: 0; }
+    .stage-frame {
+      position: relative; overflow: hidden; border: 1px solid #e6cfff30; border-radius: 22px;
+      background: #292144; box-shadow: 0 22px 70px #09071370;
+    }
+    canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; image-rendering: auto; }
+    .stage-topline { position: absolute; top: 14px; left: 15px; right: 15px; display: flex; justify-content: space-between; pointer-events: none; }
+    .stage-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border-radius: 99px; color: #fff8ff; background: #1c1738b8; border: 1px solid #ffffff25; font-size: 12px; backdrop-filter: blur(8px); }
+    .stage-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 10px var(--mint); }
+    .overlay {
+      position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: 20px;
+      background: linear-gradient(180deg, #201a3bb3, #201a3bd9);
+    }
+    .overlay[hidden] { display: none; }
+    .overlay-card {
+      width: min(480px, 100%); padding: clamp(22px, 4vw, 36px); border-radius: 22px;
+      border: 1px solid #f2dfff40; background: rgba(37, 29, 63, .96);
+      box-shadow: 0 20px 65px #0b0818a8; text-align: center;
+    }
+    .overlay-icon { font-size: 40px; margin-bottom: 8px; }
+    .overlay-card h2 { margin: 0 0 10px; font-size: clamp(25px, 4vw, 37px); line-height: 1.08; letter-spacing: -.04em; }
+    .overlay-card p { margin: 0 auto 20px; max-width: 390px; color: #d0c7e2; line-height: 1.55; font-size: 14px; }
+    .overlay-buttons { display: flex; gap: 9px; justify-content: center; flex-wrap: wrap; }
+    .primary-button, .secondary-button { padding: 11px 16px; font-weight: 750; }
+    .primary-button { color: #30203e; background: linear-gradient(135deg, #ffd782, #ffaacb); border-color: transparent; box-shadow: 0 6px 18px #f7a3ca35; }
+    .primary-button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+    .secondary-button { background: #ffffff0d; }
+    .secondary-button[hidden] { display: none; }
+    .dialogue {
+      position: absolute; z-index: 2; left: 14px; right: 14px; bottom: 14px;
+      min-height: 74px; display: flex; align-items: center; gap: 14px; padding: 13px 14px 13px 17px;
+      border-radius: 16px; border: 1px solid #f4dfff43; background: #201a3beF; box-shadow: 0 8px 26px #120e23a6;
+    }
+    .dialogue[hidden] { display: none; }
+    .dialogue-speaker { min-width: 82px; color: var(--gold); font-weight: 800; font-size: 12px; }
+    .dialogue-text { flex: 1; color: #fbf7ff; font-size: 14px; line-height: 1.4; }
+    .dialog-next { flex: 0 0 auto; padding: 8px 10px; font-size: 12px; background: #ffffff12; }
+    .dialog-next:hover { border-color: #ffd78299; }
+    .mobile-controls { display: none; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+    .dpad { display: grid; grid-template-columns: repeat(3, 43px); grid-template-rows: repeat(2, 40px); gap: 4px; }
+    .touch-key { border: 1px solid #ffffff22; border-radius: 11px; background: #ffffff10; touch-action: none; font-size: 18px; }
+    .touch-key:active { background: #c8a8ff50; }
+    .touch-up { grid-column: 2; } .touch-left { grid-column: 1; grid-row: 2; }
+    .touch-down { grid-column: 2; grid-row: 2; } .touch-right { grid-column: 3; grid-row: 2; }
+    .touch-interact { min-width: 88px; height: 84px; border-radius: 18px; font-size: 13px; font-weight: 800; color: #30203e; background: linear-gradient(145deg, #ffd782, #ffaacb); border: 0; }
+    aside { display: grid; gap: 13px; }
+    .side-card { padding: 17px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: 0 12px 35px #08061328; }
+    .side-card h2 { margin: 0 0 12px; font-size: 14px; letter-spacing: .01em; }
+    .room-count { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+    .room-count strong { color: #fff; font-size: 13px; }
+    .progress-track { display: flex; gap: 5px; }
+    .progress-segment { height: 7px; flex: 1; border-radius: 99px; background: #ffffff15; }
+    .progress-segment.done { background: linear-gradient(90deg, #a8efc7, #ffd782); box-shadow: 0 0 10px #a8efc73b; }
+    .goal-title { margin: 13px 0 4px; color: var(--gold); font-weight: 800; font-size: 12px; }
+    .goal-text { margin: 0; color: #d8d0e7; font-size: 12px; line-height: 1.45; }
+    .role-list { display: grid; gap: 7px; }
+    .role-button {
+      width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px;
+      color: #f7f2ff; text-align: left; background: #ffffff08;
+    }
+    .role-button.active { border-color: #d5b7ffb3; background: #c3a4ff20; box-shadow: inset 3px 0 #d2aaff; }
+    .role-icon { width: 31px; height: 31px; display: grid; place-items: center; flex: 0 0 31px; border-radius: 10px; font-size: 17px; }
+    .role-copy { min-width: 0; }
+    .role-name { display: block; font-size: 12px; font-weight: 800; }
+    .role-hint { display: block; margin-top: 2px; color: #c4badb; font-size: 10px; line-height: 1.25; }
+    .keycap { margin-left: auto; color: #b9aecf; font-size: 10px; border: 1px solid #ffffff24; border-radius: 5px; padding: 2px 5px; }
+    .howto { display: grid; gap: 8px; }
+    .howto-row { display: flex; justify-content: space-between; gap: 12px; color: #c7bed9; font-size: 11px; }
+    .howto-row strong { color: #fff; font-size: 11px; }
+    .hint-line { color: #a99ebc; font-size: 10px; line-height: 1.45; margin: 11px 0 0; }
+    .footer-note { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 0 3px; color: #9f94b5; font-size: 10px; }
+    .toast {
+      position: absolute; z-index: 2; top: 62px; left: 50%; transform: translate(-50%, -8px);
+      max-width: calc(100% - 30px); padding: 8px 12px; border-radius: 99px; color: #fff;
+      background: #211a3bd9; border: 1px solid #ffffff2b; font-size: 12px; opacity: 0; pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 900px) {
+      .game-layout { grid-template-columns: minmax(0, 1fr) 255px; gap: 12px; }
+      .side-card { padding: 14px; }
+    }
+    @media (max-width: 720px) {
+      .shell { padding: 14px 10px 22px; }
+      header { align-items: flex-start; }
+      .subtitle { max-width: 300px; }
+      .game-layout { grid-template-columns: 1fr; }
+      aside { grid-template-columns: 1fr 1fr; }
+      .side-card:first-child { grid-column: 1 / -1; }
+      .mobile-controls { display: flex; }
+      .footer-note { font-size: 9px; }
+    }
+    @media (max-width: 460px) {
+      .header-actions { gap: 5px; }
+      .small-button { padding: 8px; font-size: 11px; }
+      .brand-mark { width: 39px; height: 39px; flex-basis: 39px; border-radius: 13px; }
+      aside { grid-template-columns: 1fr; }
+      .side-card:first-child { grid-column: auto; }
+      .dialogue { left: 8px; right: 8px; bottom: 8px; padding: 10px; gap: 8px; }
+      .dialogue-speaker { min-width: 64px; font-size: 10px; }
+      .dialogue-text { font-size: 12px; }
+      .dialog-next { padding: 7px; font-size: 10px; }
+      .stage-chip { font-size: 10px; padding: 6px 8px; }
+      .stage-topline { top: 8px; left: 8px; right: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">✦</div>
+        <div>
+          <h1>Emily and the Almost-Rescue</h1>
+          <p class="subtitle">A tiny fairytale about being more than one kind of brave.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="small-button" id="soundButton" type="button" aria-pressed="false">♫ Sound: off</button>
+        <button class="small-button" id="restartButton" type="button">↻ Restart</button>
+      </div>
+    </header>
+
+    <div class="game-layout">
+      <section class="play-column" aria-label="Game">
+        <div class="stage-frame">
+          <canvas id="game" width="960" height="540" aria-label="Fairytale game scene"></canvas>
+          <div class="stage-topline">
+            <div class="stage-chip"><span class="dot"></span><span id="roomChip">Clover Gate</span></div>
+            <div class="stage-chip"><span id="roleChip">✦ Hero</span></div>
+          </div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+          <div class="dialogue" id="dialogue" hidden>
+            <div class="dialogue-speaker" id="dialogueSpeaker">Emily</div>
+            <div class="dialogue-text" id="dialogueText"></div>
+            <button class="dialog-next" id="dialogueNext" type="button">Next ↵</button>
+          </div>
+          <div class="overlay" id="overlay">
+            <div class="overlay-card">
+              <div class="overlay-icon" id="overlayIcon">👑</div>
+              <h2 id="overlayTitle">Emily and the Almost-Rescue</h2>
+              <p id="overlayText">The kingdom’s storybook has mixed up its roles. The hero is rescuing a princess, the princess is… also you. Switch between your sides, solve four little problems, and see how the story ends.</p>
+              <div class="overlay-buttons">
+                <button class="primary-button" id="overlayPrimary" type="button">Start the adventure</button>
+                <button class="secondary-button" id="overlaySecondary" type="button" hidden>Continue saved game</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-controls" aria-label="Touch controls">
+          <div class="dpad">
+            <button class="touch-key touch-up" data-dir="up" aria-label="Move up">↑</button>
+            <button class="touch-key touch-left" data-dir="left" aria-label="Move left">←</button>
+            <button class="touch-key touch-down" data-dir="down" aria-label="Move down">↓</button>
+            <button class="touch-key touch-right" data-dir="right" aria-label="Move right">→</button>
+          </div>
+          <button class="touch-key touch-interact" id="touchInteract" type="button">Interact<br>✦</button>
+        </div>
+
+        <div class="footer-note">
+          <span>Move with WASD / arrow keys · E to interact · 1–4 to switch</span>
+          <span>Progress saves in this browser</span>
+        </div>
+      </section>
+
+      <aside>
+        <section class="side-card">
+          <div class="room-count"><span>STORY PROGRESS</span><strong id="progressLabel">0 / 4</strong></div>
+          <div class="progress-track" id="progressTrack" aria-label="Story progress"></div>
+          <p class="goal-title" id="goalTitle">A gate with comic timing</p>
+          <p class="goal-text" id="goalText">A very serious gatekeeper refuses to open the gate. Maybe seriousness is the problem.</p>
+        </section>
+
+        <section class="side-card">
+          <h2>Emily, in four roles</h2>
+          <div class="role-list" id="roleList"></div>
+        </section>
+
+        <section class="side-card">
+          <h2>How to play</h2>
+          <div class="howto">
+            <div class="howto-row"><span>Move</span><strong>WASD / arrows</strong></div>
+            <div class="howto-row"><span>Interact</span><strong>E</strong></div>
+            <div class="howto-row"><span>Switch roles</span><strong>1 – 4</strong></div>
+            <div class="howto-row"><span>Pause</span><strong>Esc</strong></div>
+          </div>
+          <p class="hint-line" id="nearbyHint">Walk up to something interesting and press E. Try a different role if one approach doesn't fit.</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    // Emily's four roles are facets of one playable character, not separate people.
+    const roles = [
+      { name: "Hero", icon: "✦", color: "#ff897f", hint: "Steady hands; moves the immovable.", tint: "#ff897f" },
+      { name: "Princess", icon: "♛", color: "#ffacd1", hint: "Royal flair; opens storybook magic.", tint: "#ffacd1" },
+      { name: "Jester", icon: "☼", color: "#ffd36f", hint: "A quick joke changes the mood.", tint: "#ffd36f" },
+      { name: "Listener", icon: "♫", color: "#9be6d1", hint: "Hears what the room is saying.", tint: "#9be6d1" }
+    ];
+    const rooms = [
+      {
+        name: "Clover Gate", goal: "A gate with comic timing",
+        intro: "A very serious gatekeeper refuses to open the gate. Maybe seriousness is the problem.",
+        object: "the gatekeeper", role: 2,
+        wrong: "The gatekeeper is still frowning. Try a role that can make a tense moment lighter.",
+        lines: ["The gatekeeper announces, “Only a perfectly serious password will do!”", "Emily tries a tiny, ridiculous bow. The gatekeeper snorts, then laughs so hard the gate swings open.", "Turns out a little silliness can be a very practical tool."]
+      },
+      {
+        name: "Moon Library", goal: "A whisper between the shelves",
+        intro: "A book is missing its last page. The shelves seem to be trying to tell you something.",
+        object: "the whispering book", role: 3,
+        wrong: "The page stays blank. This room has a quiet clue; try listening for it.",
+        lines: ["The book’s pages flutter, but the words are too soft to read.", "Emily pauses. Behind the rustle, she hears a tiny tune: “Look where moonlight meets the floor.”", "A silver page slips from beneath the window. The hidden door unlocks."]
+      },
+      {
+        name: "Windy Courtyard", goal: "A path under the rubble",
+        intro: "A pile of fallen stones blocks the bridge. The next room is just across it.",
+        object: "the fallen stones", role: 0,
+        wrong: "The stones don't budge. This looks like a job for someone with a steady, strong push.",
+        lines: ["The bridge is blocked by a tangle of heavy stones.", "Emily plants her feet and moves them one at a time. No grand speech needed—just a good, steady push.", "The bridge is clear. The tower door is waiting."]
+      },
+      {
+        name: "Star Tower", goal: "The princess is… you",
+        intro: "At the top of the tower, a mirror waits. The story insists someone must rescue the princess.",
+        object: "the storybook mirror", role: 1,
+        wrong: "The mirror glimmers, but the story hasn't found its ending. Try the role with a little royal magic.",
+        lines: ["The mirror shows a princess in the tower—and, unmistakably, Emily.", "“I can be the one who helps,” she says, “and I can be the one who deserves help.” The mirror opens like a door.", "She steps through under her own power. The story gets a new ending: sometimes the rescuer and the rescued are the same person."]
+      }
+    ];
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayText = document.getElementById("overlayText");
+    const overlayIcon = document.getElementById("overlayIcon");
+    const overlayPrimary = document.getElementById("overlayPrimary");
+    const overlaySecondary = document.getElementById("overlaySecondary");
+    const dialogueEl = document.getElementById("dialogue");
+    const dialogueText = document.getElementById("dialogueText");
+    const dialogueSpeaker = document.getElementById("dialogueSpeaker");
+    const dialogueNext = document.getElementById("dialogueNext");
+    const roleList = document.getElementById("roleList");
+    const progressTrack = document.getElementById("progressTrack");
+    const toastEl = document.getElementById("toast");
+    const saveKey = "emily-almost-rescue-save-v1";
+
+    const state = {
+      room: 0, solved: [false, false, false, false], role: 0,
+      x: 118, y: 390, screen: "title", dialogue: null,
+      held: new Set(), lastTime: 0, toastTimer: 0, audio: false
+    };
+    const interactable = () => ({ x: 486, y: state.room === 2 ? 352 : state.room === 3 ? 285 : 325 });
+    const portal = { x: 875, y: 304 };
+
+    // Build the role picker and progress meter once; update only their state afterward.
+    roles.forEach((role, i) => {
+      const button = document.createElement("button");
+      button.className = "role-button";
+      button.type = "button";
+      button.dataset.role = i;
+      button.innerHTML = `<span class="role-icon" style="background:${role.color}24;color:${role.color}">${role.icon}</span><span class="role-copy"><span class="role-name">${role.name}</span><span class="role-hint">${role.hint}</span></span><span class="keycap">${i + 1}</span>`;
+      button.addEventListener("click", () => switchRole(i));
+      roleList.appendChild(button);
+      const segment = document.createElement("span");
+      segment.className = "progress-segment";
+      segment.title = rooms[i].name;
+      progressTrack.appendChild(segment);
+    });
+
+    function updateUI() {
+      const room = rooms[state.room];
+      document.getElementById("roomChip").textContent = room.name;
+      document.getElementById("roleChip").textContent = `${roles[state.role].icon} ${roles[state.role].name}`;
+      document.getElementById("progressLabel").textContent = `${state.solved.filter(Boolean).length} / 4`;
+      document.getElementById("goalTitle").textContent = room.goal;
+      document.getElementById("goalText").textContent = room.intro;
+      document.querySelectorAll(".progress-segment").forEach((el, i) => el.classList.toggle("done", state.solved[i]));
+      document.querySelectorAll(".role-button").forEach((el, i) => el.classList.toggle("active", i === state.role));
+      document.getElementById("nearbyHint").textContent = state.solved[state.room]
+        ? (state.room < 3 ? "The way is open. Walk to the glowing doorway on the right and press E." : "The mirror is ready. Step close and press E to finish the story.")
+        : `Find ${room.object}, then press E with the right role.`;
+    }
+    function save() {
+      try { localStorage.setItem(saveKey, JSON.stringify({ room: state.room, solved: state.solved })); } catch (_) {}
+    }
+    function loadSave() {
+      try {
+        const value = JSON.parse(localStorage.getItem(saveKey) || "null");
+        if (!value || !Array.isArray(value.solved) || value.solved.length !== 4) return false;
+        state.room = Math.max(0, Math.min(3, value.room | 0));
+        state.solved = value.solved.map(Boolean);
+        return state.solved.some(Boolean) || state.room > 0;
+      } catch (_) { return false; }
+    }
+    const hasSave = loadSave();
+    if (hasSave) overlaySecondary.hidden = false;
+    updateUI();
+
+    function setOverlay(title, text, primary, secondary, icon = "✨") {
+      state.screen = "overlay";
+      overlayTitle.textContent = title;
+      overlayText.textContent = text;
+      overlayPrimary.textContent = primary;
+      overlayIcon.textContent = icon;
+      overlaySecondary.hidden = !secondary;
+      if (secondary) overlaySecondary.textContent = secondary;
+      overlay.hidden = false;
+      dialogueEl.hidden = true;
+    }
+    function startGame(fresh = true) {
+      if (fresh) {
+        state.room = 0; state.role = 0; state.solved = [false, false, false, false];
+        state.x = 118; state.y = 390; save();
+      }
+      state.screen = "playing";
+      overlay.hidden = true;
+      updateUI();
+      if (fresh) showDialogue(["Emily finds herself in a storybook kingdom where every role is hers to play.", "“The hero is on the way to rescue the princess,” says the narrator. Emily looks around. “Great. Which one am I?”"], "Narrator");
+    }
+    function restart() {
+      state.room = 0; state.role = 0; state.solved = [false, false, false, false];
+      state.x = 118; state.y = 390; state.dialogue = null;
+      dialogueEl.hidden = true; save(); updateUI(); startGame(false);
+      showDialogue(["Fresh page, same Emily. Let's see what this story needs."], "Narrator");
+    }
+    overlayPrimary.addEventListener("click", () => {
+      if (state.screen === "ending") restart();
+      else if (state.screen === "paused") resume();
+      else startGame(true);
+    });
+    overlaySecondary.addEventListener("click", () => {
+      if (state.screen === "paused") restart();
+      else startGame(false);
+    });
+    document.getElementById("restartButton").addEventListener("click", restart);
+    dialogueNext.addEventListener("click", advanceDialogue);
+
+    function switchRole(index) {
+      if (index < 0 || index >= roles.length || state.screen !== "playing") return;
+      if (state.role !== index) {
+        state.role = index;
+        updateUI();
+        playTone(480 + index * 65, 0.045, "sine", 0.035);
+        showToast(`${roles[index].icon} ${roles[index].name}`);
+      }
+    }
+    function showDialogue(lines, speaker = "Emily") {
+      state.dialogue = { lines, index: 0, speaker };
+      dialogueSpeaker.textContent = speaker;
+      dialogueText.textContent = lines[0];
+      dialogueEl.hidden = false;
+      state.held.clear();
+    }
+    function advanceDialogue() {
+      if (!state.dialogue) return;
+      state.dialogue.index++;
+      if (state.dialogue.index >= state.dialogue.lines.length) {
+        state.dialogue = null; dialogueEl.hidden = true; return;
+      }
+      dialogueText.textContent = state.dialogue.lines[state.dialogue.index];
+    }
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      clearTimeout(state.toastTimer);
+      state.toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1050);
+    }
+    function resume() {
+      state.screen = "playing";
+      overlay.hidden = true;
+      state.lastTime = 0;
+    }
+    function pause() {
+      if (state.screen !== "playing" || state.dialogue) return;
+      state.screen = "paused";
+      overlayTitle.textContent = "Take a little pause";
+      overlayText.textContent = "The story will be right here when you're ready.";
+      overlayIcon.textContent = "⏸";
+      overlayPrimary.textContent = "Resume story";
+      overlaySecondary.hidden = false;
+      overlaySecondary.textContent = "Start over";
+      overlay.hidden = false;
+      dialogueEl.hidden = true;
+    }
+
+    function interact() {
+      if (state.screen !== "playing") return;
+      if (state.dialogue) { advanceDialogue(); return; }
+      const target = interactable();
+      if (!state.solved[state.room] && distance(state.x, state.y, target.x, target.y) < 125) {
+        const room = rooms[state.room];
+        if (state.role !== room.role) {
+          showDialogue([room.wrong, `Try ${roles[room.role].name}: ${roles[room.role].hint.toLowerCase()}`], "Storybook");
+          return;
+        }
+        state.solved[state.room] = true;
+        save(); updateUI();
+        playTone(710, 0.13, "triangle", 0.055);
+        showDialogue(room.lines, "Emily");
+        return;
+      }
+      if (state.room === 3 && state.solved[3] && distance(state.x, state.y, target.x, target.y) < 125) {
+        state.screen = "ending";
+        setOverlay("The end—and a beginning", "Emily has been the rescuer, the princess, the punchline, and the one who listened. None of those roles cancels out the others. This story belongs to all of her.", "Play again", null, "🌟");
+        state.screen = "ending";
+        try { localStorage.removeItem(saveKey); } catch (_) {}
+        return;
+      }
+      if (distance(state.x, state.y, portal.x, portal.y) < 120) {
+        if (!state.solved[state.room]) {
+          showDialogue(["The story can't move on just yet. There's still something to do in this room."], "Narrator");
+        } else if (state.room < 3) {
+          state.room++;
+          state.x = 95; state.y = 390;
+          save(); updateUI(); playTone(580, 0.1, "sine", 0.04);
+          showDialogue([`Next page: ${rooms[state.room].name}.`, rooms[state.room].intro], "Narrator");
+        } else {
+          state.screen = "ending";
+          setOverlay("The end—and a beginning", "Emily has been the rescuer, the princess, the punchline, and the one who listened. None of those roles cancels out the others. This story belongs to all of her.", "Play again", null, "🌟");
+          try { localStorage.removeItem(saveKey); } catch (_) {}
+        }
+        return;
+      }
+      const room = rooms[state.room];
+      showToast(`Walk closer to ${room.object} or the doorway`);
+    }
+    function distance(x1, y1, x2, y2) { return Math.hypot(x1 - x2, y1 - y2); }
+
+    // Sound is optional and generated locally; no audio assets or network calls are used.
+    let audioContext = null;
+    function playTone(freq, duration, type = "sine", volume = 0.025) {
+      if (!state.audio) return;
+      try {
+        audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = type; oscillator.frequency.value = freq;
+        gain.gain.setValueAtTime(volume, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+        oscillator.connect(gain); gain.connect(audioContext.destination);
+        oscillator.start(); oscillator.stop(audioContext.currentTime + duration);
+      } catch (_) {}
+    }
+    document.getElementById("soundButton").addEventListener("click", (event) => {
+      state.audio = !state.audio;
+      event.currentTarget.textContent = `♫ Sound: ${state.audio ? "on" : "off"}`;
+      event.currentTarget.setAttribute("aria-pressed", String(state.audio));
+      if (state.audio) playTone(550, 0.08, "sine", 0.04);
+    });
+
+    // Keyboard and pointer-held touch controls share the same movement system.
+    const keyMap = {
+      ArrowUp: "up", KeyW: "up", ArrowDown: "down", KeyS: "down",
+      ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right"
+    };
+    window.addEventListener("keydown", (event) => {
+      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(event.code)) event.preventDefault();
+      if (event.code in keyMap) state.held.add(keyMap[event.code]);
+      if (event.repeat) return;
+      if (event.code === "KeyE" || event.code === "Space" || event.code === "Enter") interact();
+      if (event.code === "Escape") {
+        if (state.screen === "paused") resume();
+        else pause();
+      }
+      if (/^Digit[1-4]$/.test(event.code)) switchRole(Number(event.code.slice(-1)) - 1);
+    });
+    window.addEventListener("keyup", (event) => { if (event.code in keyMap) state.held.delete(keyMap[event.code]); });
+    window.addEventListener("blur", () => state.held.clear());
+    document.querySelectorAll("[data-dir]").forEach((button) => {
+      const dir = button.dataset.dir;
+      button.addEventListener("pointerdown", (event) => { event.preventDefault(); button.setPointerCapture(event.pointerId); state.held.add(dir); });
+      const stop = () => state.held.delete(dir);
+      button.addEventListener("pointerup", stop);
+      button.addEventListener("pointercancel", stop);
+      button.addEventListener("lostpointercapture", stop);
+    });
+    document.getElementById("touchInteract").addEventListener("click", interact);
+
+    function update(dt) {
+      if (state.screen !== "playing" || state.dialogue) return;
+      let dx = (state.held.has("right") ? 1 : 0) - (state.held.has("left") ? 1 : 0);
+      let dy = (state.held.has("down") ? 1 : 0) - (state.held.has("up") ? 1 : 0);
+      if (dx && dy) { dx *= .7071; dy *= .7071; }
+      const speed = 230;
+      state.x = Math.max(47, Math.min(914, state.x + dx * speed * dt));
+      state.y = Math.max(105, Math.min(485, state.y + dy * speed * dt));
+    }
+    function loop(now) {
+      const dt = Math.min((now - (state.lastTime || now)) / 1000, .04);
+      state.lastTime = now;
+      update(dt); draw(now / 1000);
+      requestAnimationFrame(loop);
+    }
+
+    // Canvas art is drawn in code so the game runs offline with no asset downloads.
+    function roundedRect(x, y, w, h, r, fill, stroke) {
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
+    }
+    function draw() {
+      const g = ctx.createLinearGradient(0, 0, 0, 540);
+      const palettes = [
+        ["#c3e9e1", "#83c88b"], ["#e7d5ff", "#a78ac0"],
+        ["#b5daf1", "#c6cfdf"], ["#433862", "#272441"]
+      ][state.room];
+      g.addColorStop(0, palettes[0]); g.addColorStop(1, palettes[1]);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 960, 540);
+      if (state.room === 0) drawGarden();
+      else if (state.room === 1) drawLibrary();
+      else if (state.room === 2) drawCourtyard();
+      else drawTower();
+      drawInteractable();
+      drawPortal();
+      drawCharacter();
+      if (state.screen === "playing" && !state.dialogue) drawPrompt();
+    }
+    function drawGarden() {
+      ctx.fillStyle = "#79be7c"; ctx.fillRect(0, 314, 960, 226);
+      ctx.fillStyle = "#d5c79a"; ctx.beginPath(); ctx.moveTo(0, 476); ctx.bezierCurveTo(250, 400, 510, 470, 960, 365); ctx.lineTo(960, 452); ctx.bezierCurveTo(600, 540, 260, 460, 0, 540); ctx.fill();
+      for (let i = 0; i < 8; i++) {
+        const x = 55 + i * 118;
+        ctx.fillStyle = i % 2 ? "#4e9563" : "#5ba06b"; ctx.beginPath(); ctx.arc(x, 290 + (i % 3) * 15, 31, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#77bb7e"; ctx.beginPath(); ctx.arc(x - 13, 281 + (i % 3) * 15, 17, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#81583e"; ctx.fillRect(x - 5, 307 + (i % 3) * 15, 10, 28);
+      }
+      for (let i = 0; i < 24; i++) {
+        const x = (i * 83 + 29) % 940 + 10, y = 340 + (i * 47) % 174;
+        ctx.fillStyle = ["#fff0b2","#ffc2d7","#c6b8ff"][i % 3];
+        ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = "#466b5c"; ctx.font = "700 15px Trebuchet MS"; ctx.fillText("CLOVER GATE", 38, 74);
+    }
+    function drawLibrary() {
+      ctx.fillStyle = "#c4a979"; ctx.fillRect(0, 332, 960, 208);
+      ctx.fillStyle = "#8a624f"; ctx.fillRect(0, 322, 960, 16);
+      for (let shelf = 0; shelf < 3; shelf++) {
+        const x = shelf * 300 + 62;
+        ctx.fillStyle = "#6f4e68"; ctx.fillRect(x, 110 + shelf * 55, 210, 12);
+        for (let b = 0; b < 8; b++) {
+          const bh = 35 + (b * 19 + shelf * 7) % 42;
+          roundedRect(x + 5 + b * 25, 110 + shelf * 55 - bh, 19, bh, 3, ["#d78da9","#7d87bd","#e3bd75","#9baf8e"][((b + shelf) % 4)]);
+        }
+      }
+      ctx.fillStyle = "#fff2b9"; ctx.beginPath(); ctx.arc(772, 144, 57, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = "#f3d995"; ctx.fillRect(715, 143, 114, 170);
+      ctx.fillStyle = "#fff8d1"; ctx.beginPath(); ctx.arc(772, 144, 38, Math.PI, 0); ctx.fill(); ctx.fillRect(734, 144, 76, 139);
+      ctx.fillStyle = "#5e4969"; ctx.font = "700 15px Trebuchet MS"; ctx.fillText("MOON LIBRARY", 38, 74);
+    }
+    function drawCourtyard() {
+      ctx.fillStyle = "#9faec2"; ctx.fillRect(0, 246, 960, 294);
+      for (let row = 0; row < 5; row++) for (let col = 0; col < 10; col++) {
+        ctx.fillStyle = (row + col) % 2 ? "#aebbc9" : "#a4b1c2";
+        ctx.fillRect(col * 100 + 2, 255 + row * 57, 96, 53);
+        ctx.strokeStyle = "#8798ad"; ctx.strokeRect(col * 100 + 2, 255 + row * 57, 96, 53);
+      }
+      ctx.fillStyle = "#d8e4f0"; ctx.fillRect(0, 228, 960, 18);
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = "#78869e"; ctx.fillRect(35 + i * 250, 145, 80, 83);
+        ctx.fillStyle = "#b6c8d8"; ctx.fillRect(49 + i * 250, 164, 52, 64);
+      }
+      ctx.fillStyle = "#455a74"; ctx.font = "700 15px Trebuchet MS"; ctx.fillText("WINDY COURTYARD", 38, 74);
+    }
+    function drawTower() {
+      ctx.fillStyle = "#342d55"; ctx.fillRect(0, 316, 960, 224);
+      ctx.fillStyle = "#51446f"; ctx.fillRect(0, 302, 960, 20);
+      for (let i = 0; i < 45; i++) {
+        const x = (i * 137) % 940 + 10, y = (i * 61) % 250 + 32;
+        ctx.fillStyle = i % 3 ? "#fff0c2a8" : "#e8c6ffbb";
+        ctx.beginPath(); ctx.arc(x, y, i % 4 === 0 ? 2.2 : 1.2, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = "#fff1bd"; ctx.beginPath(); ctx.arc(786, 104, 42, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#51446f"; ctx.beginPath(); ctx.arc(803, 89, 38, 0, Math.PI * 2); ctx.fill();
+      roundedRect(80, 74, 128, 205, 61, "#29233f", "#a68cc8");
+      ctx.fillStyle = "#8272a8"; ctx.font = "700 15px Trebuchet MS"; ctx.fillText("STAR TOWER", 38, 50);
+    }
+    function drawInteractable() {
+      const p = interactable(), done = state.solved[state.room], role = roles[rooms[state.room].role];
+      ctx.save();
+      if (state.room === 0) {
+        ctx.fillStyle = "#3a5b48"; ctx.fillRect(p.x - 56, p.y - 44, 112, 110);
+        ctx.fillStyle = "#b28a57"; ctx.fillRect(p.x - 51, p.y - 39, 102, 100);
+        ctx.fillStyle = "#6b4d58"; ctx.fillRect(p.x - 46, p.y - 35, 92, 98);
+        ctx.strokeStyle = "#d4b67b"; ctx.lineWidth = 6;
+        for (let x = p.x - 32; x <= p.x + 32; x += 32) { ctx.beginPath(); ctx.moveTo(x, p.y - 30); ctx.lineTo(x, p.y + 62); ctx.stroke(); }
+        ctx.fillStyle = "#f2c6a5"; ctx.beginPath(); ctx.arc(p.x + 5, p.y + 4, 17, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#553c54"; ctx.fillRect(p.x - 7, p.y - 20, 26, 8);
+        ctx.fillStyle = "#392e48"; ctx.font = "700 11px Trebuchet MS"; ctx.textAlign = "center";
+        ctx.fillText(done ? "OPEN!" : "PASSWORD?", p.x, p.y + 83);
+      } else if (state.room === 1) {
+        roundedRect(p.x - 50, p.y - 19, 100, 48, 7, "#705172", "#d2a6ce");
+        ctx.fillStyle = "#f2d989"; ctx.beginPath(); ctx.ellipse(p.x, p.y - 15, 31, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#faf0c8"; ctx.fillRect(p.x - 24, p.y - 46, 48, 31);
+        ctx.strokeStyle = "#c4a86b"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y - 44); ctx.lineTo(p.x, p.y - 17); ctx.stroke();
+        ctx.strokeStyle = "#eff2ff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y - 49, 19, 3.8, 5.65); ctx.stroke();
+        ctx.fillStyle = "#55435f"; ctx.font = "700 11px Trebuchet MS"; ctx.textAlign = "center";
+        ctx.fillText(done ? "PAGE FOUND" : "LISTEN", p.x, p.y + 48);
+      } else if (state.room === 2) {
+        ctx.fillStyle = "#778196";
+        [[-42,0,56,42],[-5,-18,57,59],[25,7,44,35],[-22,-43,39,31]].forEach(([dx,dy,w,h],i) => {
+          ctx.fillStyle = ["#748198","#8792a4","#69778c","#a0a8b6"][i];
+          ctx.beginPath(); ctx.moveTo(p.x+dx,p.y+dy+h); ctx.lineTo(p.x+dx+6,p.y+dy+5); ctx.lineTo(p.x+dx+w,p.y+dy); ctx.lineTo(p.x+dx+w-4,p.y+dy+h); ctx.closePath(); ctx.fill();
+        });
+        ctx.fillStyle = "#e0d9c9"; ctx.font = "700 11px Trebuchet MS"; ctx.textAlign = "center";
+        ctx.fillText(done ? "PATH CLEAR" : "BLOCKED", p.x, p.y + 61);
+      } else {
+        ctx.beginPath(); ctx.ellipse(p.x, p.y - 4, 57, 77, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "#8e78b5"; ctx.fill(); ctx.lineWidth = 8; ctx.strokeStyle = "#e9c982"; ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(p.x, p.y - 5, 43, 62, 0, 0, Math.PI * 2);
+        const mirror = ctx.createLinearGradient(p.x-35,p.y-55,p.x+38,p.y+55);
+        mirror.addColorStop(0, "#f6ceea"); mirror.addColorStop(.5, "#9fcce5"); mirror.addColorStop(1, "#e4c9ff");
+        ctx.fillStyle = mirror; ctx.fill();
+        ctx.fillStyle = "#fff1cc"; ctx.font = "700 11px Trebuchet MS"; ctx.textAlign = "center";
+        ctx.fillText(done ? "STORY COMPLETE" : "YOUR REFLECTION", p.x, p.y + 88);
+      }
+      if (!done) {
+        ctx.globalAlpha = .85 + Math.sin(performance.now() / 220) * .15;
+        ctx.fillStyle = role.color; ctx.beginPath(); ctx.arc(p.x, p.y - 77, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.font = "16px sans-serif"; ctx.fillText(role.icon, p.x, p.y - 95);
+      }
+      ctx.restore();
+    }
+    function drawPortal() {
+      const open = state.solved[state.room];
+      ctx.save();
+      ctx.beginPath(); ctx.ellipse(portal.x, portal.y, 34, 67, 0, 0, Math.PI * 2);
+      ctx.fillStyle = open ? "#cda4ff33" : "#211c3830"; ctx.fill();
+      ctx.lineWidth = 6; ctx.strokeStyle = open ? "#ecd2ff" : "#847b95"; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(portal.x, portal.y, 22, 56, 0, 0, Math.PI * 2);
+      ctx.fillStyle = open ? "#8dd5f766" : "#302a4333"; ctx.fill();
+      if (open) {
+        ctx.fillStyle = "#fff0c2"; ctx.font = "20px sans-serif"; ctx.textAlign = "center"; ctx.fillText("✧", portal.x, portal.y + 7);
+      } else {
+        ctx.fillStyle = "#d8cce6"; ctx.font = "18px sans-serif"; ctx.textAlign = "center"; ctx.fillText("🔒", portal.x, portal.y + 7);
+      }
+      ctx.restore();
+    }
+    function drawCharacter() {
+      const role = roles[state.role], x = state.x, y = state.y;
+      const moving = state.held.size > 0 && !state.dialogue;
+      const bounce = moving ? Math.sin(performance.now() / 70) * 2 : Math.sin(performance.now() / 360) * 1.2;
+      ctx.save();
+      ctx.fillStyle = "#1c213344"; ctx.beginPath(); ctx.ellipse(x, y + 23, 21, 7, 0, 0, Math.PI * 2); ctx.fill();
+      // Cape / outfit changes subtly with the active role while the character stays the same.
+      ctx.fillStyle = role.color; ctx.beginPath(); ctx.moveTo(x - 15, y - 2 + bounce); ctx.lineTo(x + 13, y - 2 + bounce); ctx.lineTo(x + 19, y + 20 + bounce); ctx.lineTo(x - 18, y + 20 + bounce); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#f6d2be"; ctx.beginPath(); ctx.arc(x, y - 14 + bounce, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#49344e"; ctx.beginPath(); ctx.arc(x, y - 19 + bounce, 13, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.fillRect(x - 12, y - 20 + bounce, 5, 9); ctx.fillRect(x + 7, y - 20 + bounce, 5, 9);
+      ctx.fillStyle = "#382b45"; ctx.beginPath(); ctx.arc(x - 4, y - 13 + bounce, 1.2, 0, Math.PI * 2); ctx.arc(x + 4, y - 13 + bounce, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#a85e70"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y - 10 + bounce, 3.5, .15, Math.PI - .15); ctx.stroke();
+      // Role token.
+      ctx.fillStyle = role.color; ctx.beginPath(); ctx.arc(x + 15, y - 32 + bounce, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#352543"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.fillText(role.icon, x + 15, y - 28 + bounce);
+      ctx.fillStyle = "#312847"; ctx.fillRect(x - 12, y + 19 + bounce, 9, 7); ctx.fillRect(x + 3, y + 19 + bounce, 9, 7);
+      ctx.restore();
+    }
+    function drawPrompt() {
+      let label = "";
+      if (!state.solved[state.room] && distance(state.x, state.y, interactable().x, interactable().y) < 125) label = `E · ${rooms[state.room].object}`;
+      else if (distance(state.x, state.y, portal.x, portal.y) < 120) label = state.solved[state.room] ? "E · enter" : "E · not yet";
+      if (!label) return;
+      ctx.save(); ctx.font = "700 13px Trebuchet MS"; const width = ctx.measureText(label).width + 25;
+      roundedRect(state.x - width / 2, state.y - 65, width, 30, 12, "#211a3be8", "#ffffff44");
+      ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(label, state.x, state.y - 45);
+      ctx.restore();
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
